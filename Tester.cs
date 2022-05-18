@@ -8,15 +8,18 @@ using UnityEngine.UI;
 public class Tester : MonoBehaviour
 {
     static string data = "테스트1=3+(4*2)\n테스트2=테스트1+2\n테스트3=테스트4(1,2)";
-    GolemLanguage.FunctionRunner3<int> runner = new GolemLanguage.FunctionRunner3<int>(new GolemLanguage());
+    GolemLanguage.FunctionRunner3<int> runner;
 
     public Text debug;
-    public InputField debugInput;
+    public TMPro.TMP_InputField debugInput;
+
+    public Golem testGolem;
 
     // Start is called before the first frame update
     void Start()
     {
         //runner.RunFunction(data);
+        runner = new GolemLanguage.FunctionRunner3<int>(testGolem);
     }
 
     public void RunFunc()

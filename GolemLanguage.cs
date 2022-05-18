@@ -132,7 +132,7 @@ public class GolemLanguage
                             }
                         }
 
-                        Debug.Log("ë³€ìˆ˜ : " + string.Join(",", splited));
+                        Debug.Log("º¯¼ö : " + string.Join(",", splited));
 
 
 
@@ -256,9 +256,9 @@ public class GolemLanguage
                                 calctype = "int";
                                 calc.Append(caller.intDic[current.ToString()]);
                                 calc.Append(code[cursor]);
-                            }//ë‹¤ë¥¸ ë”•ì…”ë„ˆë¦¬ë„ ìˆœíšŒ
+                            }//´Ù¸¥ µñ¼Å³Ê¸®µµ ¼øÈ¸
 
-                            else //ëª¨ë“  ë”•ì…”ë„ˆë¦¬ì— ì—†ìœ¼ë©´
+                            else //¸ğµç µñ¼Å³Ê¸®¿¡ ¾øÀ¸¸é
                             {
                                 state = -1;
                                 break;
@@ -377,7 +377,7 @@ public class GolemLanguage
 
             switch (header)
             {
-                case "í•©":
+                case "ÇÕ":
                     //REQ : args n (INT)
 
                     int sum = 0;
@@ -388,7 +388,7 @@ public class GolemLanguage
 
                     return sum.ToString();
 
-                case "ëŒì•„":
+                case "µ¹¾Æ":
                     //REQ : args 1 (INT)
                     if (args.Count != 1)
                     {
@@ -400,10 +400,10 @@ public class GolemLanguage
                     }
 
                     return null;
-                case "ì•ìœ¼ë¡œ":
+                case "¾ÕÀ¸·Î":
                     gol.MoveFoward();
                     return null;
-                case "í…ŒìŠ¤íŠ¸4":
+                case "Å×½ºÆ®4":
                     return "1";
             }
 
@@ -554,7 +554,7 @@ public class GolemLanguage
 
             System.Data.DataTable dt = new System.Data.DataTable();
 
-            //507í˜¸
+            //507È£
             Debug.Log("calc:" + sbCalc.ToString());
             return ((int)dt.Compute(sbCalc.ToString(), "")).ToString();
         }
