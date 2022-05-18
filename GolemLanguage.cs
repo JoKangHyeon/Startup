@@ -132,7 +132,7 @@ public class GolemLanguage
                             }
                         }
 
-                        Debug.Log("º¯¼ö : " + string.Join(",", splited));
+                        Debug.Log("ë³€ìˆ˜ : " + string.Join(",", splited));
 
 
 
@@ -256,9 +256,9 @@ public class GolemLanguage
                                 calctype = "int";
                                 calc.Append(caller.intDic[current.ToString()]);
                                 calc.Append(code[cursor]);
-                            }//´Ù¸¥ µñ¼Å³Ê¸®µµ ¼øÈ¸
+                            }//ë‹¤ë¥¸ ë”•ì…”ë„ˆë¦¬ë„ ìˆœíšŒ
 
-                            else //¸ğµç µñ¼Å³Ê¸®¿¡ ¾øÀ¸¸é
+                            else //ëª¨ë“  ë”•ì…”ë„ˆë¦¬ì— ì—†ìœ¼ë©´
                             {
                                 state = -1;
                                 break;
@@ -295,13 +295,16 @@ public class GolemLanguage
     {
         T returnValue = default(T);
         public GolemLanguage runner;
+        Golem gol;
+
 
         public enum Mode { start, unknown, insertValue, funcArgument };
 
 
-        public FunctionRunner3(GolemLanguage runner)
+        public FunctionRunner3(Golem g)
         {
-            this.runner = runner;
+            this.gol = g;
+            this.runner = new GolemLanguage();
         }
 
         public T RunFunction(string lines)
@@ -318,7 +321,93 @@ public class GolemLanguage
 
         public string RunFunc(string header, string value)
         {
-            return "1";
+            Debug.Log(value);
+            StringBuilder sb = new StringBuilder();
+            StringBuilder sbSub = new StringBuilder();
+            List<string> args = new List<string>();
+            int opened = 0;
+
+            Debug.Log(value);
+
+            for (int i = 0; i < value.Length; i++)
+            {
+                if (value[i] == ')')
+                {
+                    if (opened == 0)
+                    {
+                        Debug.LogError("FUNC ERRROR");
+                        return "-1";
+                    }
+                    else
+                    {
+                        opened--;
+                    }
+                }
+                else if (value[i] == '(')
+                {
+                    opened++;
+                }
+                else if (value[i] == ',')
+                {
+                    if (opened == 0)
+                    {
+                        args.Add(sb.ToString());
+                        sb.Clear();
+                        continue;
+                    }
+                }
+                sb.Append(value[i]);
+
+            }
+
+
+            if (sb.Length != 0)
+            {
+                args.Add(sb.ToString());
+            }
+
+
+            for (int i = 0; i < args.Count; i++)
+            {
+                Debug.Log(header + "(" + value + ") : " + i + " : " + args[i]);
+
+                args[i] = GetValue(args[i]);
+                Debug.Log(header + "(" + value + ") : " + i + " replaced : " + args[i]);
+            }
+
+            switch (header)
+            {
+                case "í•©":
+                    //REQ : args n (INT)
+
+                    int sum = 0;
+                    for (int i = 0; i < args.Count; i++)
+                    {
+                        sum += int.Parse(args[i]);
+                    }
+
+                    return sum.ToString();
+
+                case "ëŒì•„":
+                    //REQ : args 1 (INT)
+                    if (args.Count != 1)
+                    {
+                        return null;
+                    }
+                    else
+                    {
+                        gol.TurnRight(int.Parse(args[0]));
+                    }
+
+                    return null;
+                case "ì•ìœ¼ë¡œ":
+                    gol.MoveFoward();
+                    return null;
+                case "í…ŒìŠ¤íŠ¸4":
+                    return "1";
+            }
+
+            return null;
         }
 
         private string GetValue(string line)
@@ -326,7 +415,7 @@ public class GolemLanguage
             StringBuilder sbLine = new StringBuilder(line);
             StringBuilder sbContent = new StringBuilder();
             StringBuilder sbCalc = new StringBuilder();
-            
+
             int submode = 0;
 
             for (int i = 0; i < sbLine.Length; i++)
@@ -338,7 +427,7 @@ public class GolemLanguage
                 }
                 else if (sbLine[i] == '(' && submode == 0)
                 {
-                    sbCalc.Append(sbLine[i]);   
+                    sbCalc.Append(sbLine[i]);
                 }
                 else if (submode == 0)
                 {
@@ -394,7 +483,7 @@ public class GolemLanguage
                 {
                     if (sbLine[i] == '(')
                     {
-                        Debug.Log(sbContent.ToString());
+                        //Debug.Log(sbContent.ToString());
                         int opened = 0;
                         int j;
                         for (j = i; j < sbLine.Length; j++)
@@ -419,7 +508,7 @@ public class GolemLanguage
 
                         Debug.Log(sbLine.ToString(i, j - i));
 
-                        sbCalc.Append(RunFunc(sbContent.ToString(), sbLine.ToString(i + 1, j - i - 1)));
+                        sbCalc.Append(RunFunc(sbContent.ToString(), sbLine.ToString(i + 1, j - i - 2)));
                         sbContent.Clear();
 
                         i = j;
@@ -465,8 +554,8 @@ public class GolemLanguage
 
             System.Data.DataTable dt = new System.Data.DataTable();
 
-            //507È£
-            Debug.Log("calc:"+sbCalc.ToString());
+            //507í˜¸
+            Debug.Log("calc:" + sbCalc.ToString());
             return ((int)dt.Compute(sbCalc.ToString(), "")).ToString();
         }
 
@@ -541,7 +630,7 @@ public class GolemLanguage
                     {
                         sbContent.Append(sbLine[i]);
                     }
-                } 
+                }
                 else if (currentMode == Mode.insertValue)
                 {
                     int value = int.Parse(GetValue(sbLine.ToString(i, sbLine.Length - i)));
@@ -559,14 +648,28 @@ public class GolemLanguage
                 {
                     int opened = 0;
 
-                    
+                    if (sbLine[i] == '(')
+                    {
+                        opened++;
+                    }
+                    else if (sbLine[i] == ')')
+                    {
+                        if (opened == 0)
+                        {
+                            RunFunc(splited[0], sbContent.ToString());
+                            break;
+                        }
+                        else
+                        {
+                            opened--;
+                        }
+                    }
+                    sbContent.Append(sbLine[i]);
+
                 }
 
 
             }
-
-            if(runner.intDic.ContainsKey("Å×½ºÆ®3"))
-            Debug.Log(runner.intDic["Å×½ºÆ®3"]);
         }
     }
 
@@ -575,7 +678,7 @@ public class GolemLanguage
         public List<System.Type> argumentType;
         public System.Type returnType;
 
-        public Object Run(List<Object> argu)
+        public Object Run(List<string> argu)
         {
             return null;
         }
