@@ -9,291 +9,15 @@ public class GolemLanguage
 {
 
     public Stack<Object> callStack;
-    private static readonly char[] operators = { '+', '-', '/','*' };
+    private static readonly char[] operators = { '+', '-', '/','*' ,'&','|','`','>','<'};
 
-    public Dictionary<string, int> intDic = new Dictionary<string, int>();
+    public Dictionary<string, System.Object> valueDic = new Dictionary<string, System.Object>();
 
     private Dictionary<string, InstructionCapsule> inst;
 
-    public class FunctionRunner<T>
+    public class FunctionRunner
     {
-        List<string> lines;
-
-        T ret = default(T);
-
-        public FunctionRunner(string func)
-        {
-            lines = new List<string>();
-
-            lines.AddRange(func.Split('\n'));
-        }
-
-        public T RunFunction()
-        {
-            ret = default(T);
-
-            for(int i = 0; i < lines.Count; i++)
-            {
-                LineRunner(i);
-            }
-
-            return ret;
-        }
-
-        public void LineRunner(int line)
-        {
-            Stack<string> st = new Stack<string>();
-            StringBuilder sb = new StringBuilder();
-            char[] chars = lines[line].ToCharArray();
-
-            for(int i=0; i < chars.Length; i++)
-            {
-                switch (chars[i])
-                {
-                    case '(':
-                        st.Push(sb.ToString());
-                        Debug.Log(sb.ToString());
-                        sb.Append(MiddleRunner(i, chars, st));
-                        if (i == -1)
-                        {
-                            Debug.Log("ERROR");
-                            return;
-                        }
-                        break;
-                    case '=':
-                        st.Push(sb.ToString());
-                        Debug.Log(sb.ToString());
-                        sb.Append(MiddleRunner(i, chars, st));
-                        if (i == -1)
-                        {
-                            Debug.Log("ERROR");
-                            return;
-                        }
-                        break;
-                    case ')':
-                        break;
-                    default:
-                        sb.Append(chars[i]);
-                        break;
-                }
-            }
-
-            Debug.Log(string.Join(",",st.ToArray()));
-        }
-
-
-        public string MiddleRunner(int position, char[] chars, Stack<string> st)
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.Append(chars[position]);
-            for (int i = position+1; i < chars.Length; i++)
-            {
-                switch (chars[i])
-                {
-                    case '(':
-                        //st.Push(sb.ToString());
-                        sb.Append(MiddleRunner(i, chars, st));
-                        Debug.Log(sb);
-                        break;
-                    case '=':
-                        return "-1";
-                    case ')':
-                        sb.Append(chars[i]);
-
-                        bool calcString = false;
-
-                        if (sb[0] == '(')
-                        {
-                            sb.Remove(0, 1);
-                        }
-
-                        if (sb[sb.Length-1] == ')')
-                        {
-                            sb.Remove(sb.Length - 1, 1);
-                        }
-                        string str = sb.ToString();
-
-                        List<string> splited = new List<string>();
-
-                        if (str.Contains("\""))
-                        {
-                            calcString = true;
-                        }
-
-                        splited.AddRange(str.Split(operators));
-
-                        for (int j=0; j < splited.Count; j++)
-                        {
-                            if (splited[j].All(char.IsDigit))
-                            {
-                                splited.RemoveAt(j);
-                                j--;
-                                continue;
-                            }
-                        }
-
-                        Debug.Log("변수 : " + string.Join(",", splited));
-
-
-
-                        //st.Push(sb.ToString());
-                        Debug.Log(sb.ToString());
-                        return sb.ToString();
-                    default:
-                        sb.Append(chars[i]);
-                        break;
-                }
-            }
-
-            return "";
-        }
-    }
-
-    public class FunctionRunner2<T>
-    {
-
-        GolemLanguage caller;
-
-        public FunctionRunner2(GolemLanguage caller)
-        {
-            this.caller = caller;
-        }
-
-        Object getValue(string code)
-        {
-            int state = 0;
-            StringBuilder current = new StringBuilder();
-            StringBuilder calc = new StringBuilder();
-            string calctype = "null";
-            int deep = 0;
-
-            int cursor = 0;
-
-            bool escape = false;
-
-            while (true)
-            {
-
-                if (cursor < code.Length)
-                {
-                    switch (state)
-                    {
-                        case 0:
-                            if (code[cursor] == '\"')
-                            {
-                                state = 3;
-                            }
-                            else if (char.IsDigit(code[cursor]))
-                            {
-                                state = 2;
-                            }
-                            else if (operators.Contains<char>(code[cursor]))
-                            {
-                                state = -1;
-                            }
-                            else
-                            {
-                                state = 1;
-                            }
-
-                            break;
-
-                        case 1:
-                            current.Append(code[cursor++]);
-                            if (code[cursor] == '(')
-                            {
-                                if (caller.inst.ContainsKey(current.ToString()))
-                                {
-                                    //FUNCRUN
-                                    break;
-                                }
-                                else
-                                {
-                                    state = -1;
-                                    break;
-                                }
-                            }
-                            else if (operators.Contains<char>(code[cursor])|| code[cursor] == ')')
-                            {
-                                state = 5;
-
-                            }
-                            else
-                            {
-                                current.Append(code[cursor++]);
-                                state = 1;
-                            }
-                            break;
-
-                        case 2:
-                            //numbers
-
-                            if(char.IsDigit(code[cursor]) || code[cursor] == '.')
-                            {
-                                current.Append(code[cursor++]);
-                                state = 2;
-                                break;
-                            }else if (operators.Contains<char>(code[cursor]))
-                            {
-                                calc.Append(current.ToString());
-                                calc.Append(code[cursor++]);
-                                state = 3;
-                                break;
-                            }else if(code[cursor] == ')')
-                            {
-                                state = 10;
-                                break;
-                            }
-                            else
-                            {
-                                state = -1;
-                                break;
-                            }
-
-                        case 5:
-                            if (caller.intDic.ContainsKey(current.ToString()) && (new List<string> { "null", "int" }).Contains(calctype))
-                            {
-                                calctype = "int";
-                                calc.Append(caller.intDic[current.ToString()]);
-                                calc.Append(code[cursor]);
-                            }//다른 딕셔너리도 순회
-
-                            else //모든 딕셔너리에 없으면
-                            {
-                                state = -1;
-                                break;
-                            }
-
-                            if (code[cursor] == ')')
-                            {
-                                state = 10;
-                            }
-                            else
-                            {
-                                
-                                state = 0;
-                            }
-                            break;
-                    }
-
-                    if (escape)
-                    {
-                        break;
-                    }
-                }
-                else
-                {
-                    //EOL
-                }
-            }
-
-            return null;
-        }
-    }
-
-    public class FunctionRunner3<T>
-    {
-        T returnValue = default(T);
+        System.Object returnValue;
         public GolemLanguage runner;
         Golem gol;
 
@@ -301,30 +25,229 @@ public class GolemLanguage
         public enum Mode { start, unknown, insertValue, funcArgument };
 
 
-        public FunctionRunner3(Golem g)
+        public FunctionRunner(Golem g)
         {
             this.gol = g;
             this.runner = new GolemLanguage();
         }
 
-        public T RunFunction(string lines)
+        public System.Object RunLines(string lines)
         {
-            returnValue = default(T);
+            returnValue = null;
 
-            foreach (string line in lines.Split('\n'))
+            Stack<int> indents = new Stack<int>();
+            Stack<string> indentType = new Stack<string>();
+            Stack<int> indentStartAt = new Stack<int>();
+
+            int currentIndent = 0;
+            string currentIndentType = "none";
+
+            StringBuilder sb = new StringBuilder() ;
+            int opened = 0;
+
+            bool indentNeedChange = false;
+            bool pass = false;
+
+
+            string[] lineSplit = lines.Split('\n');
+            for (int l=0; l< lineSplit.Length+1;l++)
             {
-                RunLine(line);
+                sb.Clear();
+                int i;
+
+                if (l == lineSplit.Length)
+                {
+                    if (currentIndentType == "반복" && !pass)
+                    {
+                        currentIndent = indents.Pop();
+                        currentIndentType = indentType.Pop();
+                        l = indentStartAt.Pop();
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                for (i=0; i< lineSplit[l].Length; i++)
+                {
+                    if(lineSplit[l][i]!=' ')
+                    {
+                        break;
+                    }
+                }
+
+                if (indentNeedChange)
+                {
+                    if (currentIndent > i)
+                    {
+                        throw new System.Exception("indent error");
+                    }
+
+                    indents.Push(currentIndent);
+                    currentIndent = i;
+                    indentNeedChange = false;
+                    indentStartAt.Push(l - 1);
+                    Debug.Log(currentIndent + " : " + currentIndentType + " ENTER");
+                }
+
+                if (pass)
+                {
+                    if (currentIndent > i)
+                    {
+                        pass = false;
+                        currentIndent = indents.Pop();
+                        currentIndentType = indentType.Pop();
+                        indentStartAt.Pop();
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                }
+
+                while (currentIndent != i )
+                {
+                    if ((currentIndent == 0 && i != 0 )|| indents.Count == 0)
+                    {
+                        throw new System.Exception("indent error");
+                    }
+
+                    Debug.Log(currentIndent + " : " + currentIndentType + " ESCAPE");
+
+                    if (currentIndentType == "반복")
+                    {
+                        currentIndent = indents.Pop();
+                        currentIndentType = indentType.Pop();
+                        l=indentStartAt.Pop();
+                    }
+                    else
+                    {
+                        currentIndent = indents.Pop();
+                        currentIndentType = indentType.Pop();
+                        indentStartAt.Pop();
+                    }
+                    
+                }
+
+
+                if (lineSplit[l].Substring(i).StartsWith("반복"))
+                {
+
+                    indentNeedChange = true;
+                    indentType.Push(currentIndentType);
+                    currentIndentType = "반복";
+
+                    for(int j = i+2; j < lineSplit[l].Length; j++)
+                    {
+                        if (lineSplit[l][j] == '(')
+                        {
+                            opened++;
+                            sb.Append(lineSplit[l][j]);
+                        }
+                        else if (lineSplit[l][j] == ')')
+                        {
+                            if (opened == 0)
+                            {
+                                throw new System.Exception("반복 : 인자 오류");
+                            }
+                            else
+                            {
+                                opened--;
+                            }
+
+                            sb.Append(lineSplit[l][j]);
+                        }
+                        else
+                        {
+                            if (opened == 0)
+                            {
+                                if (lineSplit[l][j] == ' ' || lineSplit[l][j] =='\n')
+                                    continue;
+                                else
+                                    throw new System.Exception("반복 : 괄호 없음");
+                            }
+                            else
+                            {
+                                sb.Append(lineSplit[l][j]);
+                            }
+                        }
+                    }
+
+                    bool cond = (bool)GetValue(sb.ToString());
+
+
+                    if (!cond)
+                    {
+                        pass = true;
+                    }
+                    continue;
+                }
+
+                if (lineSplit[l].Substring(i).StartsWith("만약"))
+                {
+                    indentNeedChange = true;
+                    indentType.Push(currentIndentType);
+                    currentIndentType = "만약";
+
+                    for (int j = i + 2; j < lineSplit[l].Length; j++)
+                    {
+                        if (lineSplit[l][j] == '(')
+                        {
+                            opened++;
+                            sb.Append(lineSplit[l][j]);
+                        }
+                        else if (lineSplit[l][j] == ')')
+                        {
+                            if (opened == 0)
+                            {
+                                throw new System.Exception("만약 : 인자 오류");
+                            }
+                            else
+                            {
+                                opened--;
+                            }
+
+                            sb.Append(lineSplit[l][j]);
+                        }
+                        else
+                        {
+                            if (opened == 0)
+                            {
+                                if (lineSplit[l][j] == ' ' || lineSplit[l][j] == '\n')
+                                    continue;
+                                else
+                                    throw new System.Exception("만약 : 괄호 없음");
+                            }
+                            else
+                            {
+                                sb.Append(lineSplit[l][j]);
+                            }
+                        }
+                    }
+
+                    bool cond = bool.Parse((string)GetValue(sb.ToString()));
+
+                    if (!cond)
+                    {
+                        pass = true;
+                    }
+                    continue;
+                }
+
+                RunLine(lineSplit[l].Substring(i));
             }
 
             return returnValue;
         }
 
-        public string RunFunc(string header, string value)
+        public System.Object RunFunc(string header, string value)
         {
             Debug.Log(value);
             StringBuilder sb = new StringBuilder();
             StringBuilder sbSub = new StringBuilder();
             List<string> args = new List<string>();
+            List<System.Object> argsCalc = new List<System.Object>();
             int opened = 0;
 
             Debug.Log(value);
@@ -336,7 +259,7 @@ public class GolemLanguage
                     if (opened == 0)
                     {
                         Debug.LogError("FUNC ERRROR");
-                        return "-1";
+                        return null;
                     }
                     else
                     {
@@ -371,8 +294,7 @@ public class GolemLanguage
             {
                 Debug.Log(header + "(" + value + ") : " + i + " : " + args[i]);
 
-                args[i] = GetValue(args[i]);
-                Debug.Log(header + "(" + value + ") : " + i + " replaced : " + args[i]);
+                argsCalc.Add(GetValue(args[i]));
             }
 
             switch (header)
@@ -381,12 +303,19 @@ public class GolemLanguage
                     //REQ : args n (INT)
 
                     int sum = 0;
-                    for (int i = 0; i < args.Count; i++)
+                    for (int i = 0; i < argsCalc.Count; i++)
                     {
-                        sum += int.Parse(args[i]);
+                        if (argsCalc[i].GetType().Equals(typeof(System.Int32)))
+                        {
+                            sum += (int)argsCalc[i];
+                        }
+                        else
+                        {
+                            throw new System.Exception("SUM NEED INT");
+                        }
                     }
 
-                    return sum.ToString();
+                    return sum;
 
                 case "돌아":
                     //REQ : args 1 (INT)
@@ -396,31 +325,71 @@ public class GolemLanguage
                     }
                     else
                     {
-                        gol.TurnRight(int.Parse(args[0]));
+                        
+                        if (argsCalc[0].GetType().Equals(typeof(System.Int32)))
+                        {
+                            Debug.Log(argsCalc[0].GetType());
+                            gol.TurnRight((int)argsCalc[0]);
+                        }
                     }
 
                     return null;
                 case "앞으로":
                     gol.MoveFoward();
                     return null;
+                case "출력":
+                    if (args.Count != 1)
+                    {
+                        return null;
+                    }
+                    else
+                    {
+                        gol.Print(argsCalc[0].ToString());
+                    }
+                    break;
                 case "테스트4":
-                    return "1";
+                    return 1;
             }
 
             return null;
         }
 
-        private string GetValue(string line)
+        private System.Object GetValue(string line)
         {
-            StringBuilder sbLine = new StringBuilder(line);
             StringBuilder sbContent = new StringBuilder();
             StringBuilder sbCalc = new StringBuilder();
 
+            bool stringMode = false;
+
             int submode = 0;
+
+            line = line.Replace("같다", "`").Replace("크다", ">").Replace("작다", "<").Replace("또는", "|").Replace("그리고", "&").Replace("==","`").Replace(" ","").Replace("\"","'");
+            
+
+            StringBuilder sbLine = new StringBuilder(line);
 
             for (int i = 0; i < sbLine.Length; i++)
             {
-                if (char.IsDigit(sbLine[i]) && submode == 0)
+                if(sbLine[i] == '\'')
+                {
+                    if (stringMode)
+                    {
+                        stringMode = false;
+                        sbContent.Append(sbLine[i]);
+                        sbCalc.Append(sbContent);
+                        sbContent.Clear();
+                    }
+                    else
+                    {
+                        stringMode = true;
+                        sbContent.Append(sbLine[i]);   
+                    }
+                }
+                else if (stringMode)
+                {
+                    sbContent.Append(sbLine[i]);
+                }
+                else if (char.IsDigit(sbLine[i]) && submode == 0)
                 {
                     submode = 1;
                     sbContent.Append(sbLine[i]);
@@ -441,15 +410,16 @@ public class GolemLanguage
                     {
                         sbCalc.Append(sbContent.ToString());
                         sbCalc.Append(sbLine[i]);
+
                         sbContent.Clear();
                     }
                     else if (submode == 2)
                     {
                         string get = null;
 
-                        if (runner.intDic.ContainsKey(sbContent.ToString()))
+                        if (runner.valueDic.ContainsKey(sbContent.ToString()))
                         {
-                            get = runner.intDic[sbContent.ToString()].ToString();
+                            get = runner.valueDic[sbContent.ToString()].ToString();
                         }
 
 
@@ -536,9 +506,9 @@ public class GolemLanguage
             {
                 string get = null;
 
-                if (runner.intDic.ContainsKey(sbContent.ToString()))
+                if (runner.valueDic.ContainsKey(sbContent.ToString()))
                 {
-                    get = runner.intDic[sbContent.ToString()].ToString();
+                    get = runner.valueDic[sbContent.ToString()].ToString();
                 }
 
 
@@ -556,7 +526,8 @@ public class GolemLanguage
 
             //507호
             Debug.Log("calc:" + sbCalc.ToString());
-            return ((int)dt.Compute(sbCalc.ToString(), "")).ToString();
+
+            return (dt.Compute(sbCalc.ToString().Replace('`', '='), ""));
         }
 
         private void RunLine(string line)
@@ -570,6 +541,8 @@ public class GolemLanguage
             Mode currentMode = Mode.start;
 
             int submode = 0;
+
+            bool blanked = false;
 
             for (int i = 0; i < sbLine.Length; i++)
             {
@@ -610,7 +583,8 @@ public class GolemLanguage
                     }
                     else if (sbLine[i] == ' ')
                     {
-                        throw new System.Exception("blank while unknown");
+                        blanked = true;
+                        continue;
                     }
                     else if (sbLine[i] == '=')
                     {
@@ -628,19 +602,24 @@ public class GolemLanguage
                     }
                     else
                     {
+                        if (blanked)
+                        {
+                            throw new System.Exception("띄어쓰기 이후에 결말이 안 남");
+                        }
+
                         sbContent.Append(sbLine[i]);
                     }
                 }
                 else if (currentMode == Mode.insertValue)
                 {
-                    int value = int.Parse(GetValue(sbLine.ToString(i, sbLine.Length - i)));
-                    if (runner.intDic.ContainsKey(splited[0]))
+                    System.Object value = GetValue(sbLine.ToString(i, sbLine.Length - i));
+                    if (runner.valueDic.ContainsKey(splited[0]))
                     {
-                        runner.intDic[splited[0]] = value;
+                        runner.valueDic[splited[0]] = value;
                     }
                     else
                     {
-                        runner.intDic.Add(splited[0], value);
+                        runner.valueDic.Add(splited[0], value);
                     }
                     break;
                 }
